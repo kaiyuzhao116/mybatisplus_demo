@@ -1,0 +1,18 @@
+# 数据源配置
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 确保库名mp_demo和你创建的数据库名一致，追加参数避免连接报错
+    url: jdbc:mysql://127.0.0.1:3306/mp_demo?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+
+# MyBatisPlus配置（严格2空格缩进，层级不能错）
+mybatis-plus:
+  configuration:
+    # 开启SQL日志打印，必须缩进在configuration下
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: assign_id
