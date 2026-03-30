@@ -1,6 +1,7 @@
 package com.kaiyu.mybatisplus_demo.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kaiyu.mybatisplus_demo.entity.User;
 import com.kaiyu.mybatisplus_demo.service.UserService;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * MyBatis-Plus学习用Controller
@@ -128,5 +130,111 @@ public class UserController {
         Page<User> pageParam = new Page<>(pageNum, pageSize);
         // 执行分页查询，第二个参数可传入条件构造器做带条件的分页
         return userService.page(pageParam);
+    }
+    // ==================== 【🔥 进阶功能 工作必用】 ====================
+
+    /**
+     * 1. 批量新增用户
+     */
+    @PostMapping("/batch")
+    public String saveBatch(@RequestBody List<User> userList) {
+        return userService.saveBatch(userList) ? "批量新增成功" : "失败";
+    }
+
+    /**
+     * 2. 批量删除（根据ID集合）
+     * 测试链接：/user/batch?ids=1,2,3
+     */
+    @DeleteMapping("/batch")
+    public String deleteBatch(@RequestParam List<Long> ids) {
+        return userService.removeByIds(ids) ? "批量删除成功" : "失败";
+    }
+
+    /**
+     * 3. 只查询指定字段（不查全部，提高性能）
+     * 例：只查 name 和 age
+     */
+    @GetMapping("/select/columns")
+    public List<User> selectColumns() {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(User::getName, User::getAge); // 只查这两列
+        return userService.list(wrapper);
+    }
+
+    /**
+     * 4. 排序查询（按年龄倒序）
+     */
+    @GetMapping("/order/age")
+    public List<User> orderByAge() {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(User::getAge); // 倒序
+        return userService.list(wrapper);
+    }
+
+    /**
+     * 5. 统计总数量
+     */
+    @GetMapping("/count")
+    public Long count() {
+        return userService.count();
+    }
+
+    /**
+     * 6. 条件统计：年龄大于20的人数
+     */
+    @GetMapping("/count/age")
+    public Long countByAge(@RequestParam Integer age) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.gt(User::getAge, age);
+        return userService.count(wrapper);
+    }
+
+    /**
+     * 7. 动态更新：只更新非空字段（不会覆盖null值）
+     * 例：只改邮箱，不改姓名年龄
+     */
+    @PatchMapping("/dynamic")
+    public String dynamicUpdate(@RequestBody User user) {
+        LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(User::getId, user.getId());
+        wrapper.set(user.getEmail() != null, User::getEmail, user.getEmail());
+        wrapper.set(user.getName() != null, User::getName, user.getName());
+        return userService.update(wrapper) ? "动态更新成功" : "失败";
+    }
+
+    /**
+     * 8. 查询返回 Map 格式（不需要实体类时用）
+     */
+    @GetMapping("/map")
+    public List<Map<String, Object>> selectMap() {
+        return userService.listMaps();
+    }
+
+    /**
+     * 9. 精确匹配查询（姓名=xxx 且 年龄=xxx）
+     */
+    @GetMapping("/eq")
+    public List<User> eq(
+            @RequestParam String name,
+            @RequestParam Integer age
+    ) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getName, name);
+        wrapper.eq(User::getAge, age);
+        return userService.list(wrapper);
+    }
+
+    /**
+     * 10. 分页 + 条件 组合查询（最常用！）
+     */
+    @GetMapping("/page/condition")
+    public Page<User> pageAndCondition(
+            @RequestParam(defaultValue = "1") Long pageNum,
+            @RequestParam(defaultValue = "5") Long pageSize,
+            @RequestParam(required = false) String name
+    ) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(name != null, User::getName, name);
+        return userService.page(new Page<>(pageNum, pageSize), wrapper);
     }
 }
